@@ -58,6 +58,3 @@ body {
 .animate-fade-in {
   animation: fadeIn 0.2s ease-out forwards;
 }
-
-/* Add custom animations to tailwind utility context if needed, 
-   but manual CSS classes are extremely robust and reliable. */

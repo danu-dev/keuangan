@@ -98,7 +98,7 @@ export const BudgetPage: React.FC<BudgetProps> = ({
   };
 
   return (
-    <div className="pb-28 pt-4 px-4 max-w-[430px] mx-auto space-y-6">
+    <div className="pb-24 pt-4 px-4 w-full max-w-full md:max-w-none md:pb-6 space-y-6">
       {/* Title */}
       <div className="flex items-center justify-between">
         <h2 className="text-base font-bold text-slate-800 dark:text-emerald-50">
@@ -149,7 +149,7 @@ export const BudgetPage: React.FC<BudgetProps> = ({
       )}
 
       {/* Category Budget Card Grid */}
-      <div className="space-y-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {budgets.length > 0 ? (
           budgets.map((b) => {
             const spent = categorySpentMap[b.category] || 0;

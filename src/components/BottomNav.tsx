@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Calendar, Plus, BarChart3, Wallet } from 'lucide-react';
+import { Home, Calendar, Plus, BarChart3, CreditCard } from 'lucide-react';
 
 interface BottomNavProps {
   activeTab: string;
@@ -12,11 +12,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({ activeTab, setActiveTab })
     { id: 'history', label: 'Riwayat', icon: Calendar },
     { id: 'add', label: 'Tambah', icon: Plus, isCenter: true },
     { id: 'report', label: 'Laporan', icon: BarChart3 },
-    { id: 'budget', label: 'Anggaran', icon: Wallet },
+    { id: 'wallet', label: 'Dompet', icon: CreditCard },
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center bg-transparent px-4 pb-4 pointer-events-none">
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex justify-center bg-transparent px-4 pb-4 pointer-events-none md:hidden">
       <div className="w-full max-w-[400px] h-16 bg-[#ffffffcc] dark:bg-[#052e16cc] backdrop-blur-xl border border-emerald-100/50 dark:border-emerald-900/30 rounded-2xl shadow-xl flex items-center justify-between px-4 pointer-events-auto">
         {tabs.map((tab) => {
           const Icon = tab.icon;

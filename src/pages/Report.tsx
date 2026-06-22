@@ -208,7 +208,7 @@ export const Report: React.FC<ReportProps> = ({ transactions }) => {
   }, [monthlyStats, previousMonthStats, categoryExpenses]);
 
   return (
-    <div className="pb-28 pt-4 px-4 max-w-[430px] mx-auto space-y-6">
+    <div className="pb-24 pt-4 px-4 w-full max-w-full md:max-w-none md:pb-6 space-y-6">
       {/* Header Selector */}
       <div className="flex items-center justify-between">
         <h2 className="text-base font-bold text-slate-800 dark:text-emerald-50">
@@ -249,31 +249,119 @@ export const Report: React.FC<ReportProps> = ({ transactions }) => {
         </div>
       </div>
 
-      {/* Expense Allocation Donut Chart */}
-      <div className="bg-white dark:bg-[#052e1610] dark:border dark:border-emerald-950/20 border border-slate-100 rounded-3xl p-4 shadow-sm space-y-4">
-        <h3 className="text-xs font-bold text-slate-800 dark:text-emerald-100">Alokasi Pengeluaran</h3>
+      {/* Grid wrapper for desktop viewports */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {pieChartData.length > 0 ? (
-          <div className="flex flex-col items-center justify-center">
-            {/* Chart Area */}
+        {/* Left Column (Allocation Donut Chart and Recommendations Insights) */}
+        <div className="space-y-6">
+          {/* Expense Allocation Donut Chart */}
+          <div className="bg-white dark:bg-[#052e1610] dark:border dark:border-emerald-950/20 border border-slate-100 rounded-3xl p-4 shadow-sm space-y-4">
+            <h3 className="text-xs font-bold text-slate-800 dark:text-emerald-100">Alokasi Pengeluaran</h3>
+            
+            {pieChartData.length > 0 ? (
+              <div className="flex flex-col items-center justify-center">
+                {/* Chart Area */}
+                <div className="w-full h-44">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={pieChartData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={70}
+                        paddingAngle={3}
+                        dataKey="value"
+                      >
+                        {pieChartData.map((_entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: any) => formatRupiah(value)}
+                        contentStyle={{
+                          fontSize: '11px',
+                          borderRadius: '12px',
+                          border: '1px solid rgba(16, 185, 129, 0.2)',
+                          boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
+                          backgroundColor: '#052e16f0',
+                          backdropFilter: 'blur(4px)',
+                          padding: '8px 12px'
+                        }}
+                        itemStyle={{ color: '#4ade80', fontWeight: 'bold' }}
+                        labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Custom Legend Layout */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 w-full mt-2">
+                  {pieChartData.slice(0, 6).map((item, index) => {
+                    const total = monthlyStats.expense;
+                    const percentage = total > 0 ? Math.round((item.value / total) * 100) : 0;
+                    
+                    return (
+                      <div key={item.name} className="flex items-center space-x-1.5 min-w-0">
+                        <span
+                          className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                        ></span>
+                        <span className="text-[10px] font-semibold text-slate-600 dark:text-emerald-300 truncate">
+                          {item.name} ({percentage}%)
+                        </span>
+                      </div>
+                    );
+                  })}
+                  {pieChartData.length > 6 && (
+                    <div className="text-[9px] text-slate-400 dark:text-emerald-400/40 italic flex items-center col-span-2 justify-center mt-1">
+                      *Menampilkan 6 kategori pengeluaran terbesar
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="h-40 flex items-center justify-center border border-dashed border-slate-200 dark:border-emerald-900/30 rounded-2xl text-xs text-slate-400 dark:text-emerald-400/40">
+                Belum ada data pengeluaran di bulan ini.
+              </div>
+            )}
+          </div>
+
+          {/* Automated Financial Insights Card */}
+          <div className="bg-[#f0fdf4] dark:bg-[#052e1620] border border-emerald-100 dark:border-emerald-950/50 rounded-3xl p-5 shadow-sm space-y-3">
+            <h3 className="text-xs font-black text-emerald-800 dark:text-emerald-300 flex items-center space-x-1.5">
+              <Lightbulb className="w-4 h-4 text-amber-500 animate-pulse" />
+              <span>Rekomendasi & Analisis Keuangan</span>
+            </h3>
+            
+            <div className="space-y-2">
+              {insights.map((insight, index) => (
+                <p key={index} className="text-xs text-emerald-700/90 dark:text-emerald-300/80 leading-relaxed font-semibold">
+                  {insight}
+                </p>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right Column (Trend Chart and Rankings) */}
+        <div className="space-y-6">
+          {/* 6-Month Income vs Expense Trend Line Chart */}
+          <div className="bg-white dark:bg-[#052e1610] dark:border dark:border-emerald-950/20 border border-slate-100 rounded-3xl p-4 shadow-sm space-y-4">
+            <h3 className="text-xs font-bold text-slate-800 dark:text-emerald-100">Tren Pemasukan vs Pengeluaran</h3>
+            
             <div className="w-full h-44">
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={pieChartData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={50}
-                    outerRadius={70}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {pieChartData.map((_entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
+                <LineChart data={trendData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                  <XAxis dataKey="monthName" tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} />
+                  <YAxis
+                    tickFormatter={(v) => (v >= 1000000 ? `${(v / 1000000).toFixed(1)}jt` : `${v / 1000}rb`)}
+                    tick={{ fontSize: 9, fill: '#64748b' }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
                   <Tooltip
-                    formatter={(value: any) => formatRupiah(value)}
+                    formatter={(v: any) => formatRupiah(v)}
                     contentStyle={{
                       fontSize: '11px',
                       borderRadius: '12px',
@@ -286,132 +374,55 @@ export const Report: React.FC<ReportProps> = ({ transactions }) => {
                     itemStyle={{ color: '#4ade80', fontWeight: 'bold' }}
                     labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
                   />
-                </PieChart>
+                  <Legend iconSize={8} wrapperStyle={{ fontSize: 10, paddingTop: 10 }} />
+                  <Line type="monotone" dataKey="Pemasukan" stroke="#10b981" strokeWidth={2.5} activeDot={{ r: 6 }} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="Pengeluaran" stroke="#f43f5e" strokeWidth={2.5} activeDot={{ r: 6 }} dot={{ r: 3 }} />
+                </LineChart>
               </ResponsiveContainer>
             </div>
-
-            {/* Custom Legend Layout */}
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 w-full mt-2">
-              {pieChartData.slice(0, 6).map((item, index) => {
-                const total = monthlyStats.expense;
-                const percentage = total > 0 ? Math.round((item.value / total) * 100) : 0;
-                
-                return (
-                  <div key={item.name} className="flex items-center space-x-1.5 min-w-0">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    ></span>
-                    <span className="text-[10px] font-semibold text-slate-600 dark:text-emerald-300 truncate">
-                      {item.name} ({percentage}%)
-                    </span>
-                  </div>
-                );
-              })}
-              {pieChartData.length > 6 && (
-                <div className="text-[9px] text-slate-400 dark:text-emerald-400/40 italic flex items-center col-span-2 justify-center mt-1">
-                  *Menampilkan 6 kategori pengeluaran terbesar
-                </div>
-              )}
-            </div>
           </div>
-        ) : (
-          <div className="h-40 flex items-center justify-center border border-dashed border-slate-200 dark:border-emerald-900/30 rounded-2xl text-xs text-slate-400 dark:text-emerald-400/40">
-            Belum ada data pengeluaran di bulan ini.
-          </div>
-        )}
-      </div>
 
-      {/* 6-Month Income vs Expense Trend Line Chart */}
-      <div className="bg-white dark:bg-[#052e1610] dark:border dark:border-emerald-950/20 border border-slate-100 rounded-3xl p-4 shadow-sm space-y-4">
-        <h3 className="text-xs font-bold text-slate-800 dark:text-emerald-100">Tren Pemasukan vs Pengeluaran</h3>
-        
-        <div className="w-full h-44">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={trendData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-              <XAxis dataKey="monthName" tick={{ fontSize: 9, fill: '#64748b' }} axisLine={false} tickLine={false} />
-              <YAxis
-                tickFormatter={(v) => (v >= 1000000 ? `${(v / 1000000).toFixed(1)}jt` : `${v / 1000}rb`)}
-                tick={{ fontSize: 9, fill: '#64748b' }}
-                axisLine={false}
-                tickLine={false}
-              />
-               <Tooltip
-                formatter={(v: any) => formatRupiah(v)}
-                contentStyle={{
-                  fontSize: '11px',
-                  borderRadius: '12px',
-                  border: '1px solid rgba(16, 185, 129, 0.2)',
-                  boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-                  backgroundColor: '#052e16f0',
-                  backdropFilter: 'blur(4px)',
-                  padding: '8px 12px'
-                }}
-                itemStyle={{ color: '#4ade80', fontWeight: 'bold' }}
-                labelStyle={{ color: '#ffffff', fontWeight: 'bold' }}
-              />
-              <Legend iconSize={8} wrapperStyle={{ fontSize: 10, paddingTop: 10 }} />
-              <Line type="monotone" dataKey="Pemasukan" stroke="#10b981" strokeWidth={2.5} activeDot={{ r: 6 }} dot={{ r: 3 }} />
-              <Line type="monotone" dataKey="Pengeluaran" stroke="#f43f5e" strokeWidth={2.5} activeDot={{ r: 6 }} dot={{ r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-
-      {/* Ranking of Categories */}
-      {categoryExpenses.length > 0 && (
-        <div className="bg-white dark:bg-[#052e1610] dark:border dark:border-emerald-950/20 border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
-          <h3 className="text-xs font-bold text-slate-800 dark:text-emerald-100">Ranking Pengeluaran</h3>
-          
-          <div className="space-y-3.5">
-            {categoryExpenses.map((cat, index) => {
-              const total = monthlyStats.expense;
-              const percent = total > 0 ? (cat.value / total) * 100 : 0;
+          {/* Ranking of Categories */}
+          {categoryExpenses.length > 0 && (
+            <div className="bg-white dark:bg-[#052e1610] dark:border dark:border-emerald-950/20 border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
+              <h3 className="text-xs font-bold text-slate-800 dark:text-emerald-100">Ranking Pengeluaran</h3>
               
-              const catObj = CATEGORIES.find(c => c.name === cat.name);
-              const emoji = catObj ? catObj.icon : '🍔';
+              <div className="space-y-3.5">
+                {categoryExpenses.map((cat, index) => {
+                  const total = monthlyStats.expense;
+                  const percent = total > 0 ? (cat.value / total) * 100 : 0;
+                  
+                  const catObj = CATEGORIES.find(c => c.name === cat.name);
+                  const emoji = catObj ? catObj.icon : '🍔';
 
-              return (
-                <div key={cat.name} className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2.5 min-w-0">
-                    <span className="text-xs font-bold text-slate-400 dark:text-emerald-400/40 w-4">
-                      #{index + 1}
-                    </span>
-                    <span className="text-lg flex-shrink-0">{emoji}</span>
-                    <div className="min-w-0">
-                      <span className="text-xs font-bold text-slate-700 dark:text-emerald-100 block truncate">
-                        {cat.name}
-                      </span>
-                      <span className="text-[9px] text-slate-400 dark:text-emerald-400/40 block">
-                        {Math.round(percent)}% dari total pengeluaran
+                  return (
+                    <div key={cat.name} className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2.5 min-w-0">
+                        <span className="text-xs font-bold text-slate-400 dark:text-emerald-400/40 w-4">
+                          #{index + 1}
+                        </span>
+                        <span className="text-lg flex-shrink-0">{emoji}</span>
+                        <div className="min-w-0">
+                          <span className="text-xs font-bold text-slate-700 dark:text-emerald-100 block truncate">
+                            {cat.name}
+                          </span>
+                          <span className="text-[9px] text-slate-400 dark:text-emerald-400/40 block">
+                            {Math.round(percent)}% dari total pengeluaran
+                          </span>
+                        </div>
+                      </div>
+                      
+                      <span className="text-xs font-black text-slate-800 dark:text-emerald-50 pl-2">
+                        {formatRupiah(cat.value)}
                       </span>
                     </div>
-                  </div>
-                  
-                  <span className="text-xs font-black text-slate-800 dark:text-emerald-50 pl-2">
-                    {formatRupiah(cat.value)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
-      )}
 
-      {/* Automated Financial Insights Card */}
-      <div className="bg-[#f0fdf4] dark:bg-[#052e1620] border border-emerald-100 dark:border-emerald-950/50 rounded-3xl p-5 shadow-sm space-y-3">
-        <h3 className="text-xs font-black text-emerald-800 dark:text-emerald-300 flex items-center space-x-1.5">
-          <Lightbulb className="w-4 h-4 text-amber-500 animate-pulse" />
-          <span>Rekomendasi & Analisis Keuangan</span>
-        </h3>
-        
-        <div className="space-y-2">
-          {insights.map((insight, index) => (
-            <p key={index} className="text-xs text-emerald-700/90 dark:text-emerald-300/80 leading-relaxed font-semibold">
-              {insight}
-            </p>
-          ))}
-        </div>
       </div>
     </div>
   );

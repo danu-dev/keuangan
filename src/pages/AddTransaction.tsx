@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Sparkles, Calendar, FileText, Check, AlertCircle, MessageSquare, Volume2, VolumeX, Play } from 'lucide-react';
 import type { Transaction } from '../hooks/useTransactions';
-import type { Budget } from '../hooks/useBudget';
+import type { Wallet } from '../utils/db';
 import { useVoiceInput } from '../hooks/useVoiceInput';
 import { parseVoiceInput } from '../utils/nlpParser';
 import { formatRupiah } from '../utils/formatter';
@@ -17,7 +17,7 @@ interface AddTransactionProps {
   onNavigate: (tab: string) => void;
   initialType?: 'pemasukan' | 'pengeluaran';
   transactions: Transaction[];
-  budgets: Budget[];
+  wallets: Wallet[];
   userName: string;
 }
 
@@ -29,7 +29,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
   onNavigate,
   initialType = 'pengeluaran',
   transactions,
-  budgets,
+  wallets,
   userName
 }) => {
   // Dual Page Mode: 'record' (log manual/voice transactions) or 'coach' (Holographic Voice Coach)
@@ -41,6 +41,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
   const [category, setCategory] = useState(type === 'pemasukan' ? 'Gaji' : 'Makan & Minum');
   const [note, setNote] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
+  const [walletId, setWalletId] = useState('w-tunai');
   
   const [liveTranscript, setLiveTranscript] = useState('');
   const [showVoiceSuccessAlert, setShowVoiceSuccessAlert] = useState(false);
@@ -48,7 +49,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
 
   // COACH STATES (Mode: 'coach')
   const [coachTranscript, setCoachTranscript] = useState('');
-  const [coachAnswer, setCoachAnswer] = useState('Halo! Saya adalah **VoiceCoach AI**, pelatih keuangan suara pribadi Kakak.\n\nKetuk tombol mic di bawah, lalu ucapkan pertanyaan Kakak mengenai saldo, limit anggaran, atau rekomendasi tips hemat belanja!');
+  const [coachAnswer, setCoachAnswer] = useState('Halo! Saya adalah **VoiceCoach AI**, pelatih keuangan suara pribadi Kakak.\n\nKetuk tombol mic di bawah, lalu ucapkan pertanyaan Kakak mengenai saldo bersih, kantong dompet digital (misalnya Gopay/Mandiri), atau rekomendasi tips hemat belanja!');
   const [isSpeaking, setIsSpeaking] = useState(false);
 
   // Prepopulate form if in edit mode
@@ -60,9 +61,11 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
       setCategory(editingTransaction.category);
       setNote(editingTransaction.note);
       setDate(editingTransaction.date);
+      setWalletId(editingTransaction.walletId || 'w-tunai');
     } else {
       setType(initialType);
       setCategory(initialType === 'pemasukan' ? 'Gaji' : 'Makan & Minum');
+      setWalletId('w-tunai');
     }
   }, [editingTransaction, initialType]);
 
@@ -118,7 +121,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
     setCoachTranscript(finalTranscript);
     
     // Query coach local reasoning engine
-    const result = getCoachResponse(finalTranscript, transactions, budgets, userName);
+    const result = getCoachResponse(finalTranscript, transactions, wallets, userName);
     setCoachAnswer(result.answer);
     
     // Speak out loud!
@@ -168,7 +171,8 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
       amount: numericAmount,
       category,
       note: note.trim() || (type === 'pemasukan' ? `Pemasukan ${category}` : `Pengeluaran ${category}`),
-      date
+      date,
+      walletId
     };
 
     if (editingTransaction) {
@@ -193,7 +197,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
     setCoachTranscript(questionText);
     stopSpeaking();
     
-    const result = getCoachResponse(questionText, transactions, budgets, userName);
+    const result = getCoachResponse(questionText, transactions, wallets, userName);
     setCoachAnswer(result.answer);
     
     speakIndonesian(
@@ -205,7 +209,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
 
   const handleReplayCoach = () => {
     // Generate speech text and play again
-    const result = getCoachResponse(coachTranscript || 'halo', transactions, budgets, userName);
+    const result = getCoachResponse(coachTranscript || 'halo', transactions, wallets, userName);
     speakIndonesian(
       result.speechText,
       () => setIsSpeaking(true),
@@ -220,7 +224,7 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
   };
 
   return (
-    <div className="pb-28 pt-4 px-4 max-w-[430px] mx-auto space-y-6">
+    <div className="pb-24 pt-4 px-4 w-full max-w-full md:max-w-3xl md:mx-auto md:pb-6 space-y-6">
       {/* Top Header & Cancel Button */}
       <div className="flex items-center justify-between">
         <h2 className="text-base font-bold text-slate-800 dark:text-emerald-50">
@@ -380,11 +384,11 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                 <span>Beri tips hemat</span>
               </button>
               <button
-                onClick={() => handleQuickQuestion('Bagaimana status anggaran saya')}
+                onClick={() => handleQuickQuestion('Tampilkan semua kantong keuangan saya')}
                 className="p-3 bg-white dark:bg-[#052e1610] hover:bg-slate-50 dark:hover:bg-[#052e1630] border border-slate-100 dark:border-emerald-950/20 rounded-2xl text-[10px] text-left font-bold text-slate-600 dark:text-emerald-200 shadow-sm active:scale-95 transition-transform flex items-center space-x-1.5 cursor-pointer col-span-2"
               >
                 <Play className="w-3 h-3 text-emerald-500 fill-emerald-500" />
-                <span>Bagaimana sisa limit anggaran saya?</span>
+                <span>Tampilkan rincian saldo semua kantong saya</span>
               </button>
               <button
                 onClick={() => handleQuickQuestion('Bisa beli baju harga seratus lima puluh ribu')}
@@ -510,6 +514,25 @@ export const AddTransaction: React.FC<AddTransactionProps> = ({
                   Terbaca: {formatRupiah(parseInt(amountStr, 10))}
                 </span>
               )}
+            </div>
+
+            {/* Wallet Selection Dropdown */}
+            <div className="space-y-1.5">
+              <label htmlFor="walletSelect" className="text-[10px] font-bold text-slate-400 dark:text-emerald-400/40 uppercase tracking-wider block">
+                Sumber Dana / Dompet
+              </label>
+              <select
+                id="walletSelect"
+                value={walletId}
+                onChange={(e) => setWalletId(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-50 dark:bg-emerald-950/30 border border-slate-100 dark:border-emerald-900/20 rounded-2xl text-xs font-bold text-slate-700 dark:text-emerald-100 focus:outline-none focus:border-emerald-500 transition-colors"
+              >
+                {wallets.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.icon} {w.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Category Selector */}

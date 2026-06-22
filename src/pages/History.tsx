@@ -92,7 +92,7 @@ export const History: React.FC<HistoryProps> = ({
   const hasMore = filteredTransactions.length > visibleCount;
 
   return (
-    <div className="pb-28 pt-4 px-4 max-w-[430px] mx-auto space-y-5">
+    <div className="pb-24 pt-4 px-4 w-full max-w-full md:max-w-4xl md:mx-auto md:pb-6 space-y-5">
       {/* Title */}
       <h2 className="text-base font-bold text-slate-800 dark:text-emerald-50">
         Riwayat Transaksi

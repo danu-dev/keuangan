@@ -1,5 +1,5 @@
 import type { Transaction } from '../hooks/useTransactions';
-import type { Budget } from '../hooks/useBudget';
+import type { Wallet } from './db';
 import { formatRupiah } from './formatter';
 import { parseIndonesianNumberWords, CATEGORIES } from './nlpParser';
 
@@ -52,7 +52,7 @@ export const stopSpeaking = (): void => {
 export const getCoachResponse = (
   query: string,
   transactions: Transaction[],
-  budgets: Budget[],
+  wallets: Wallet[],
   userName: string
 ): CoachResponse => {
   const cleanQuery = query.toLowerCase();
@@ -102,7 +102,7 @@ export const getCoachResponse = (
 
     const tipsTemplates = [
       `Pengeluaran belanja terbesar Kak ${userName} ada pada kategori **${topCategory}** yaitu **${formatRupiah(topAmount)}** (${topPercent}% dari total belanja).\n\n💡 **Tips:** Coba batasi belanja di kategori ${topCategory} minggu ini. Membawa bekal sendiri atau menunda belanja non-primer bisa memotong pengeluaran hingga 200 ribu rupiah!`,
-      `Kategori **${topCategory}** memakan porsi terbesar anggaran bulanan Kak ${userName} sebesar **${formatRupiah(topAmount)}**.\n\n💡 **Saran:** Coba gunakan teknik 50/30/20. Alokasikan maksimal 30% untuk keinginan. Kakak bisa hemat lebih banyak dengan membatasi jajan harian di kategori ini.`
+      `Kategori **${topCategory}** memakan porsi terbesar pengeluaran Kak ${userName} sebesar **${formatRupiah(topAmount)}**.\n\n💡 **Saran:** Coba gunakan teknik 50/30/20. Alokasikan maksimal 30% untuk keinginan. Kakak bisa hemat lebih banyak dengan membatasi jajan harian di kategori ini.`
     ];
 
     const randomIndex = Math.floor(Math.random() * tipsTemplates.length);
@@ -112,35 +112,37 @@ export const getCoachResponse = (
     };
   }
 
-  // 4. QUERY TYPE: Budget Health (Anggaran / Limit / Sisa budget)
-  if (cleanQuery.includes('anggaran') || cleanQuery.includes('budget') || cleanQuery.includes('limit') || cleanQuery.includes('sisa')) {
-    if (budgets.length === 0) {
+  // 4. QUERY TYPE: Wallet status / Kantong keuangan
+  if (cleanQuery.includes('kantong') || cleanQuery.includes('dompet') || cleanQuery.includes('rekening') || cleanQuery.includes('wallet') || cleanQuery.includes('gopay') || cleanQuery.includes('shopee') || cleanQuery.includes('mandiri') || cleanQuery.includes('tunai')) {
+    if (wallets.length === 0) {
       return {
-        answer: 'Kakak belum menetapkan batas anggaran belanja bulanan di halaman Anggaran. Atur anggaran kategori terlebih dahulu agar saya bisa melacak kesehatan limit belanja Kakak!',
-        speechText: 'Kakak belum menetapkan batas anggaran belanja bulanan. Silakan atur anggaran terlebih dahulu agar saya bisa mengevaluasinya.'
+        answer: 'Kakak belum memiliki dompet atau kantong keuangan tercatat. Tambahkan di halaman Kantong Uang!',
+        speechText: 'Kakak belum memiliki dompet atau kantong keuangan tercatat.'
       };
     }
 
-    const warningBudgets: { category: string; percent: number; limit: number; spent: number }[] = [];
-    budgets.forEach((b) => {
-      const spent = categoryExpensesMap[b.category] || 0;
-      const percent = b.amount > 0 ? (spent / b.amount) * 100 : 0;
-      if (percent >= 75) {
-        warningBudgets.push({ category: b.category, percent, limit: b.amount, spent });
+    // Check specific wallet queries
+    let matchedWallet = null;
+    for (const w of wallets) {
+      const wName = w.name.toLowerCase();
+      if (cleanQuery.includes(wName) || wName.includes(cleanQuery)) {
+        matchedWallet = w;
+        break;
       }
-    });
+    }
 
-    if (warningBudgets.length > 0) {
-      const first = warningBudgets[0];
-      const answer = `⚠️ **Peringatan Anggaran!**\nAnggaran untuk **${first.category}** sudah kritis! Terpakai **${formatRupiah(first.spent)}** dari **${formatRupiah(first.limit)}** (${Math.round(first.percent)}%).\n\nSebaiknya setop belanja kategori ini atau alokasikan sisa dana dengan ekstra hati-hati!`;
-      const speechText = `Peringatan Anggaran Kak ${userName}. Anggaran untuk ${first.category} sudah sangat kritis, terpakai sekitar ${Math.round(first.percent)} persen. Mohon kurangi atau setop belanja di kategori ini untuk sementara waktu.`;
+    if (matchedWallet) {
+      const bal = matchedWallet.balance || 0;
+      const answer = `Saldo di kantong **${matchedWallet.name}** adalah **${formatRupiah(bal)}**.`;
+      const speechText = `Saldo di kantong ${matchedWallet.name} adalah ${formatRupiah(bal)}.`;
       return { answer, speechText };
     }
 
-    return {
-      answer: '✅ **Semua Anggaran Aman!**\nTidak ada batas anggaran kategori yang melebihi 75% bulan ini. Pengelolaan keuangan Kakak luar biasa bagus! Tetap disiplin ya.',
-      speechText: `Kabar baik Kak ${userName}. Seluruh batas anggaran kategori Anda dalam status aman dan di bawah tujuh puluh lima persen. Kinerja keuangan Anda sangat baik!`
-    };
+    // Default: list all wallets
+    const walletList = wallets.map(w => `* **${w.name}**: ${formatRupiah(w.balance || 0)}`).join('\n');
+    const answer = `Berikut adalah rincian saldo di kantong keuangan Kak ${userName}:\n\n${walletList}\n\n*Total Saldo Bersih: ${formatRupiah(netBalance)}*`;
+    const speechText = `Berikut rincian saldo kantong keuangan Anda. Total saldo bersih adalah ${formatRupiah(netBalance)}.`;
+    return { answer, speechText };
   }
 
   // 5. QUERY TYPE: Price Simulation / Buying Advice (Bisa beli / Beli / Cukup / Cukup gak)
@@ -204,8 +206,8 @@ export const getCoachResponse = (
   }
 
   // 7. DEFAULT FALLBACK
-  const answer = `Halo Kak ${userName}! Saya adalah **VoiceCoach AI**, asisten keuangan pribadi lokal Anda. 🎙️\n\nKakak bisa bertanya kepada saya melalui suara mengenai hal berikut:\n* 💰 *"Berapa saldo saya?"*\n* 📈 *"Berapa pengeluaran kategori makan?"*\n* 📊 *"Bagaimana status anggaran saya?"*\n* 🛍️ *"Uang saya cukup tidak untuk beli sepatu harga 300 ribu?"*\n* 💡 *"Beri saya tips hemat bulan ini"*`;
-  const speechText = `Halo Kak ${userName}! Saya adalah VoiceCoach AI, asisten keuangan suara lokal Anda. Silakan tanya kepada saya mengenai saldo bersih, batas anggaran, tips berhemat, atau simulasi kelayakan belanja barang.`;
+  const answer = `Halo Kak ${userName}! Saya adalah **VoiceCoach AI**, asisten keuangan pribadi lokal Anda. 🎙️\n\nKakak bisa bertanya kepada saya melalui suara mengenai hal berikut:\n* 💰 *"Berapa saldo saya?"*\n* 📱 *"Berapa saldo dompet Gopay saya?"*\n* 📈 *"Berapa pengeluaran kategori makan?"*\n* 🛍️ *"Uang saya cukup tidak untuk beli sepatu harga 300 ribu?"*\n* 💡 *"Beri saya tips hemat bulan ini"*`;
+  const speechText = `Halo Kak ${userName}! Saya adalah VoiceCoach AI, asisten keuangan suara lokal Anda. Silakan tanya kepada saya mengenai saldo bersih, saldo kantong dompet digital, tips berhemat, atau simulasi kelayakan belanja barang.`;
   
   return { answer, speechText };
 };
