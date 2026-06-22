@@ -17,9 +17,11 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
 }) => {
   const [swipeOffset, setSwipeOffset] = useState(0);
   const [isSwiping, setIsSwiping] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const startXRef = useRef<number>(0);
   const currentOffsetRef = useRef<number>(0);
   const hasMovedRef = useRef<boolean>(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const catObj = CATEGORIES.find((c) => c.name === transaction.category);
   const emoji = catObj ? catObj.icon : '💰';
@@ -27,14 +29,20 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
   const isIncome = transaction.type === 'pemasukan';
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    if (isDeleting) return;
     startXRef.current = e.clientX;
     setIsSwiping(true);
     hasMovedRef.current = false;
     e.currentTarget.setPointerCapture(e.pointerId);
+    
+    // Disable CSS transition during dragging for real-time responsiveness
+    if (cardRef.current) {
+      cardRef.current.style.transition = 'none';
+    }
   };
 
   const handlePointerMove = (e: React.PointerEvent) => {
-    if (!isSwiping) return;
+    if (!isSwiping || isDeleting) return;
     const diff = e.clientX - startXRef.current;
     
     if (Math.abs(diff) > 8) {
@@ -42,39 +50,55 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
     }
 
     // Only allow swiping to the left (revealing the delete button on the right)
+    let offset = 0;
     if (diff < 0) {
-      // Add rubber banding when pulling too far
-      const offset = Math.max(diff, -100);
-      setSwipeOffset(offset);
-      currentOffsetRef.current = offset;
+      offset = Math.max(diff, -100);
     } else if (diff > 0 && currentOffsetRef.current < 0) {
-      // Allow swiping back to close
-      const offset = Math.min(currentOffsetRef.current + diff, 0);
-      setSwipeOffset(offset);
+      offset = Math.min(currentOffsetRef.current + diff, 0);
+    }
+
+    currentOffsetRef.current = offset;
+    
+    // Update style directly in DOM to bypass heavy React virtual DOM updates on every touch move
+    if (cardRef.current) {
+      cardRef.current.style.transform = `translateX(${offset}px)`;
     }
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {
+    if (isDeleting) return;
     setIsSwiping(false);
     e.currentTarget.releasePointerCapture(e.pointerId);
 
-    // If swiped more than 50px to the left, snap open to show delete action (80px width)
-    if (swipeOffset < -40) {
-      setSwipeOffset(-80);
-      currentOffsetRef.current = -80;
-    } else {
-      setSwipeOffset(0);
-      currentOffsetRef.current = 0;
+    const finalOffset = currentOffsetRef.current;
+    let targetOffset = 0;
+    
+    // If swiped more than 40px, snap it open to show the delete action (80px width)
+    if (finalOffset < -40) {
+      targetOffset = -80;
+    }
+
+    currentOffsetRef.current = targetOffset;
+    setSwipeOffset(targetOffset);
+
+    // Apply snap transition
+    if (cardRef.current) {
+      cardRef.current.style.transition = 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)';
+      cardRef.current.style.transform = `translateX(${targetOffset}px)`;
     }
   };
 
   const closeSwipe = () => {
     setSwipeOffset(0);
     currentOffsetRef.current = 0;
+    if (cardRef.current) {
+      cardRef.current.style.transition = 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)';
+      cardRef.current.style.transform = 'translateX(0px)';
+    }
   };
 
   const handleItemClick = (e: React.MouseEvent) => {
-    if (hasMovedRef.current) {
+    if (hasMovedRef.current || isDeleting) {
       e.preventDefault();
       e.stopPropagation();
       return;
@@ -86,17 +110,33 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
     }
   };
 
+  // Perform smooth optimistic collapse transition before triggering actual database deletion
+  const handleDeleteClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsDeleting(true);
+    closeSwipe();
+    
+    // Trigger onDelete callback after completion of transition
+    setTimeout(() => {
+      onDelete(transaction.id);
+    }, 300);
+  };
+
   return (
-    <div className="relative overflow-hidden rounded-2xl w-full select-none my-2 shadow-sm">
+    <div 
+      className="relative overflow-hidden rounded-2xl w-full select-none shadow-sm transition-all duration-300 ease-in-out"
+      style={{
+        maxHeight: isDeleting ? '0px' : '120px',
+        opacity: isDeleting ? 0 : 1,
+        margin: isDeleting ? '0px' : '8px 0',
+        transform: isDeleting ? 'scale(0.95)' : 'scale(1)',
+      }}
+    >
       {/* Background action - Delete button */}
       <div className="absolute inset-0 bg-rose-500 flex items-center justify-end pr-6">
         <button
           onPointerDown={(e) => e.stopPropagation()}
-          onClick={(e) => {
-            e.stopPropagation();
-            onDelete(transaction.id);
-            closeSwipe();
-          }}
+          onClick={handleDeleteClick}
           className="h-full w-20 flex flex-col items-center justify-center text-white active:scale-95 transition-transform"
           aria-label="Hapus Transaksi"
         >
@@ -107,11 +147,15 @@ export const TransactionItem: React.FC<TransactionItemProps> = ({
 
       {/* Foreground - Content Card */}
       <div
+        ref={cardRef}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
-        className="relative bg-white dark:bg-[#041a0e] dark:border dark:border-emerald-950/20 px-4 py-3 flex items-center justify-between transition-transform duration-200 ease-out border-b border-slate-100/50 cursor-pointer"
-        style={{ transform: `translateX(${swipeOffset}px)` }}
+        className="relative bg-white dark:bg-[#041a0e] dark:border dark:border-emerald-950/20 px-4 py-3 flex items-center justify-between border-b border-slate-100/50 cursor-pointer"
+        style={{ 
+          transform: `translateX(${swipeOffset}px)`,
+          transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)'
+        }}
         onClick={handleItemClick}
       >
         <div className="flex items-center space-x-3 min-w-0">
