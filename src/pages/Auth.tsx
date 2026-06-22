@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Lock, LogIn, UserPlus, ShieldAlert, Sparkles } from 'lucide-react';
+import { Mail, Lock, LogIn, UserPlus, ShieldAlert, Sparkles, Wallet, TrendingUp, Shield } from 'lucide-react';
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -66,92 +66,101 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onAuthSuccess, onSkipAuth })
 
   return (
     <div className="min-h-screen w-full flex flex-col md:flex-row bg-[#f9fefb] dark:bg-[#03140b] relative overflow-hidden">
-      {/* Left side: Premium branding banner (hidden on mobile, visible on md and up) */}
-      <div className="hidden md:flex md:w-[45%] lg:w-[50%] p-12 lg:p-16 flex-col justify-between relative overflow-hidden bg-gradient-to-br from-[#042f1a] via-[#022c22] to-[#031c12] text-white select-none">
-        {/* Background glow effects */}
-        <div className="absolute -top-40 -left-40 w-[500px] h-[500px] rounded-full bg-emerald-500/10 filter blur-3xl"></div>
-        <div className="absolute -bottom-20 -right-20 w-[400px] h-[400px] rounded-full bg-emerald-400/10 filter blur-3xl"></div>
-        
-        {/* Top brand logo */}
-        <div className="flex items-center space-x-3 z-10">
-          <div className="inline-flex items-center justify-center w-11 h-11 bg-emerald-500 text-white rounded-2xl shadow-lg shadow-emerald-500/20 font-black text-2xl">
-            $
-          </div>
-          <div>
-            <h2 className="text-base font-black tracking-tight text-emerald-50">FinanceVoice</h2>
-            <p className="text-[9px] text-emerald-400/60 font-black uppercase tracking-widest">Voice-First Ledger</p>
-          </div>
+
+      {/* LEFT SIDE — Clean, Minimal Branding */}
+      <div className="hidden md:flex md:w-[45%] lg:w-[50%] relative overflow-hidden bg-[#042f1a] text-white">
+
+        {/* Subtle background texture */}
+        <div className="absolute inset-0 opacity-[0.03]" 
+             style={{
+               backgroundImage: `radial-gradient(circle at 1px 1px, white 1px, transparent 0)`,
+               backgroundSize: '40px 40px'
+             }}>
         </div>
 
-        {/* Center Contents: Large headers & interactive statistics mock */}
-        <div className="my-auto space-y-8 z-10 max-w-lg">
-          <div className="space-y-4">
-            <h1 className="text-3xl lg:text-5xl font-black leading-tight tracking-tight bg-gradient-to-r from-emerald-100 via-white to-emerald-300 bg-clip-text text-transparent">
-              Kelola Keuangan Cepat dengan AI & Suara
-            </h1>
-            <p className="text-xs lg:text-sm text-emerald-100/60 font-bold leading-relaxed">
-              Catat transaksi harian secara instan menggunakan perintah suara berteknologi AI. Tanpa repot, otomatis terbagi ke kantong keuangan Anda secara offline-first.
-            </p>
-          </div>
+        {/* Single soft glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-emerald-500/[0.04] filter blur-[100px]"></div>
 
-          {/* Interactive stats card mock */}
-          <div className="p-6 bg-white/5 dark:bg-emerald-950/20 backdrop-blur-xl rounded-3xl border border-white/10 dark:border-emerald-500/10 shadow-2xl space-y-5 animate-pulse duration-[4000ms]">
-            <div className="flex justify-between items-center">
-              <span className="text-[9px] uppercase font-black tracking-wider text-emerald-400 flex items-center gap-1.5">
-                <Sparkles className="w-3.5 h-3.5" />
-                Live Kantong Keuangan
-              </span>
-              <span className="text-[9px] px-2 py-0.5 bg-emerald-500/20 text-emerald-300 rounded-full font-extrabold">Online Sync</span>
+        <div className="relative z-10 flex flex-col h-full p-12 lg:p-16 justify-between">
+
+          {/* Top: Clean Logo */}
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-emerald-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <Wallet className="w-5 h-5 text-white" />
             </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
-                <span className="text-[9px] text-white/50 block font-bold uppercase tracking-wider">Tunai</span>
-                <span className="text-sm lg:text-base font-black text-emerald-400">Rp 1.450.000</span>
-              </div>
-              <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
-                <span className="text-[9px] text-white/50 block font-bold uppercase tracking-wider">Bank Mandiri</span>
-                <span className="text-sm lg:text-base font-black text-emerald-400">Rp 8.120.000</span>
-              </div>
-              <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
-                <span className="text-[9px] text-white/50 block font-bold uppercase tracking-wider">Gopay</span>
-                <span className="text-sm lg:text-base font-black text-emerald-400">Rp 350.000</span>
-              </div>
-              <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
-                <span className="text-[9px] text-white/50 block font-bold uppercase tracking-wider">ShopeePay</span>
-                <span className="text-sm lg:text-base font-black text-emerald-400">Rp 120.000</span>
-              </div>
-            </div>
-
-            {/* Quick mini-graph mockup */}
-            <div className="pt-2 border-t border-white/10">
-              <div className="flex justify-between items-end h-16 space-x-1.5">
-                {[40, 65, 45, 85, 30, 95, 70].map((h, i) => (
-                  <div key={i} className="flex-1 bg-white/10 rounded-t-lg relative" style={{ height: `${h}%` }}>
-                    {i === 5 && <div className="absolute inset-0 bg-emerald-500 rounded-t-lg shadow-lg shadow-emerald-500/50"></div>}
-                  </div>
-                ))}
-              </div>
+            <div>
+              <h2 className="text-lg font-bold tracking-tight text-white">FinanceVoice</h2>
+              <p className="text-[10px] text-emerald-400/60 font-semibold uppercase tracking-widest">Voice-First Ledger</p>
             </div>
           </div>
-        </div>
 
-        {/* Footer info */}
-        <div className="text-[10px] text-white/30 z-10">
-          &copy; 2026 FinanceVoice. Didukung enkripsi lokal offline-first.
+          {/* Center: Clean Value Prop */}
+          <div className="space-y-8 max-w-md">
+
+            {/* Main headline */}
+            <div className="space-y-3">
+              <h1 className="text-3xl lg:text-4xl font-bold leading-tight tracking-tight text-white">
+                Kelola Keuangan
+                <span className="block text-emerald-400">Cepat dengan AI</span>
+              </h1>
+              <p className="text-sm text-emerald-100/50 leading-relaxed">
+                Catat transaksi harian secara instan menggunakan perintah suara berteknologi AI. 
+                Tanpa repot, otomatis terbagi ke kantong keuangan Anda secara offline-first.
+              </p>
+            </div>
+
+            {/* Clean feature cards — 3 items in a row */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm">
+                <Sparkles className="w-5 h-5 text-emerald-400 mb-2" />
+                <p className="text-[10px] font-bold text-white/70 leading-tight">AI Voice Recognition</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm">
+                <TrendingUp className="w-5 h-5 text-emerald-400 mb-2" />
+                <p className="text-[10px] font-bold text-white/70 leading-tight">Smart Analytics</p>
+              </div>
+              <div className="p-4 rounded-2xl bg-white/[0.03] border border-white/[0.06] backdrop-blur-sm">
+                <Shield className="w-5 h-5 text-emerald-400 mb-2" />
+                <p className="text-[10px] font-bold text-white/70 leading-tight">Offline-First</p>
+              </div>
+            </div>
+
+            {/* Simple stats row */}
+            <div className="flex items-center gap-6 pt-2">
+              <div>
+                <p className="text-2xl font-bold text-emerald-400">50K+</p>
+                <p className="text-[10px] text-white/40 font-medium">Pengguna Aktif</p>
+              </div>
+              <div className="w-px h-8 bg-white/10"></div>
+              <div>
+                <p className="text-2xl font-bold text-emerald-400">2M+</p>
+                <p className="text-[10px] text-white/40 font-medium">Transaksi Tercatat</p>
+              </div>
+              <div className="w-px h-8 bg-white/10"></div>
+              <div>
+                <p className="text-2xl font-bold text-emerald-400">99.9%</p>
+                <p className="text-[10px] text-white/40 font-medium">Uptime</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom: Simple footer */}
+          <div className="text-[11px] text-white/25">
+            &copy; 2026 FinanceVoice. Enkripsi lokal offline-first.
+          </div>
         </div>
       </div>
 
-      {/* Right side: Credentials Auth form */}
+      {/* RIGHT SIDE — Form (sudah bagus, tetap sama) */}
       <div className="flex-1 flex flex-col justify-center items-center px-6 py-12 md:px-12 lg:px-24 relative min-h-screen">
-        
-        {/* Glow effects for right side on light & dark mode */}
-        <div className="absolute top-1/4 right-1/4 w-72 h-72 bg-emerald-500/5 dark:bg-emerald-500/5 rounded-full filter blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-1/4 left-1/4 w-72 h-72 bg-emerald-400/5 dark:bg-emerald-600/5 rounded-full filter blur-3xl pointer-events-none"></div>
+
+        {/* Subtle glow effects */}
+        <div className="absolute top-1/4 right-1/4 w-72 h-72 bg-emerald-500/5 rounded-full filter blur-3xl pointer-events-none"></div>
+        <div className="absolute bottom-1/4 left-1/4 w-72 h-72 bg-emerald-400/5 rounded-full filter blur-3xl pointer-events-none"></div>
 
         <div className="w-full max-w-[400px] space-y-6 relative z-10 transition-all duration-300">
-          
-          {/* Header branding info (Mobile only, hidden on desktop) */}
+
+          {/* Mobile branding */}
           <div className="text-center space-y-2 md:text-left md:space-y-1">
             <div className="inline-flex items-center justify-center w-14 h-14 bg-emerald-500 text-white rounded-2xl shadow-lg shadow-emerald-500/20 mb-2 font-black text-2xl md:hidden">
               $
