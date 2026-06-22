@@ -1,4 +1,4 @@
-const CACHE_NAME = 'financevoice-v2';
+const CACHE_NAME = 'financevoice-v3';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -62,7 +62,14 @@ self.addEventListener('fetch', (e) => {
           return networkResponse;
         })
         .catch(() => {
-          return caches.match('/index.html') || caches.match('/');
+          // Fixed promise logic to correctly resolve the fallback assets sequentially
+          return caches.match(e.request).then((res) => {
+            if (res) return res;
+            return caches.match('/index.html').then((indexRes) => {
+              if (indexRes) return indexRes;
+              return caches.match('/');
+            });
+          });
         })
     );
     return;
@@ -75,15 +82,20 @@ self.addEventListener('fetch', (e) => {
         if (cachedResponse) {
           return cachedResponse;
         }
-        return fetch(e.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(e.request, responseClone);
-            });
-          }
-          return networkResponse;
-        });
+        return fetch(e.request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              const responseClone = networkResponse.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(e.request, responseClone);
+              });
+            }
+            return networkResponse;
+          })
+          .catch((err) => {
+            console.warn('[Service Worker] Asset fetch failed while offline:', err);
+            // Gracefully handle offline asset fetching failure
+          });
       })
     );
     return;
