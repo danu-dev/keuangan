@@ -35,10 +35,10 @@ export const useBudget = () => {
   const getDocRef = (category: string) => {
     const currentUser = auth.currentUser;
     const activeRoomId = localStorage.getItem('fv_syncRoomId');
-    if (currentUser) {
-      return doc(firestore, USERS_COLLECTION, currentUser.uid, 'budgets', category);
-    } else if (activeRoomId) {
+    if (activeRoomId) {
       return doc(firestore, ROOMS_COLLECTION, activeRoomId, 'budgets', category);
+    } else if (currentUser) {
+      return doc(firestore, USERS_COLLECTION, currentUser.uid, 'budgets', category);
     }
     return null;
   };

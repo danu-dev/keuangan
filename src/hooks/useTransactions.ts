@@ -49,10 +49,10 @@ export const useTransactions = () => {
   const getDocRef = (txId: string) => {
     const currentUser = auth.currentUser;
     const activeRoomId = localStorage.getItem('fv_syncRoomId');
-    if (currentUser) {
-      return doc(firestore, USERS_COLLECTION, currentUser.uid, 'transactions', txId);
-    } else if (activeRoomId) {
+    if (activeRoomId) {
       return doc(firestore, ROOMS_COLLECTION, activeRoomId, 'transactions', txId);
+    } else if (currentUser) {
+      return doc(firestore, USERS_COLLECTION, currentUser.uid, 'transactions', txId);
     }
     return null;
   };

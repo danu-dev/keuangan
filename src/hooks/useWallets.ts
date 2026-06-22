@@ -29,10 +29,10 @@ export const useWallets = (transactions: Transaction[]) => {
   const getDocRef = (walletId: string) => {
     const currentUser = auth.currentUser;
     const activeRoomId = localStorage.getItem('fv_syncRoomId');
-    if (currentUser) {
-      return doc(firestore, USERS_COLLECTION, currentUser.uid, 'wallets', walletId);
-    } else if (activeRoomId) {
+    if (activeRoomId) {
       return doc(firestore, ROOMS_COLLECTION, activeRoomId, 'wallets', walletId);
+    } else if (currentUser) {
+      return doc(firestore, USERS_COLLECTION, currentUser.uid, 'wallets', walletId);
     }
     return null;
   };
