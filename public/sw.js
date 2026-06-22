@@ -63,11 +63,11 @@ self.addEventListener('fetch', (e) => {
         })
         .catch(() => {
           // Fixed promise logic to correctly resolve the fallback assets sequentially
-          return caches.match(e.request).then((res) => {
+          return caches.match(e.request, { ignoreSearch: true }).then((res) => {
             if (res) return res;
-            return caches.match('/index.html').then((indexRes) => {
+            return caches.match('/index.html', { ignoreSearch: true }).then((indexRes) => {
               if (indexRes) return indexRes;
-              return caches.match('/');
+              return caches.match('/', { ignoreSearch: true });
             });
           });
         })
@@ -78,7 +78,7 @@ self.addEventListener('fetch', (e) => {
   // 2. Static Assets (JS, CSS, images under /assets/) -> Cache First, falling back to Network
   if (url.pathname.includes('/assets/')) {
     e.respondWith(
-      caches.match(e.request).then((cachedResponse) => {
+      caches.match(e.request, { ignoreSearch: true }).then((cachedResponse) => {
         if (cachedResponse) {
           return cachedResponse;
         }
@@ -114,7 +114,7 @@ self.addEventListener('fetch', (e) => {
         return networkResponse;
       })
       .catch(() => {
-        return caches.match(e.request);
+        return caches.match(e.request, { ignoreSearch: true });
       })
   );
 });

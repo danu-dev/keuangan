@@ -2,7 +2,7 @@
   "name": "FinanceVoice — Personal Finance PWA",
   "short_name": "FinanceVoice",
   "description": "Aplikasi manajemen keuangan pribadi offline dengan input suara instan.",
-  "start_url": "./index.html",
+  "start_url": "/",
   "display": "standalone",
   "theme_color": "#22c55e",
   "background_color": "#f0fdf4",
