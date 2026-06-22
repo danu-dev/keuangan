@@ -17,7 +17,9 @@ import { auth } from './utils/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<string>('dashboard');
+  const [activeTab, setActiveTab] = useState<string>(() => {
+    return localStorage.getItem('fv_activeTab') || 'dashboard';
+  });
   const [userName, setUserName] = useState<string>(() => {
     return localStorage.getItem('fv_userName') || 'Put';
   });
@@ -44,6 +46,7 @@ function App() {
   // Sync hook
   const {
     currentUser,
+    authLoading,
     syncRoomId,
     syncStatus,
     syncError,
@@ -90,7 +93,7 @@ function App() {
       joinSyncRoom(joinCode)
         .then(() => {
           alert(`Berhasil tersambung ke ruang sinkronisasi: ${joinCode}`);
-          setActiveTab('settings');
+          handleNavigate('settings');
         })
         .catch((err: any) => {
           alert(`Gagal menyambung otomatis: ${err.message}`);
@@ -118,12 +121,13 @@ function App() {
 
   const handleNavigate = (tab: string, params?: any) => {
     setActiveTab(tab);
+    localStorage.setItem('fv_activeTab', tab);
     setNavParams(params || null);
   };
 
   const handleEditTransactionClick = (t: Transaction) => {
     setEditingTransaction(t);
-    setActiveTab('add');
+    handleNavigate('add');
   };
 
   const handleImportAllData = (importedTransactions: Transaction[], importedWallets: any[], importedName: string) => {
@@ -148,6 +152,22 @@ function App() {
     localStorage.setItem('fv_guestMode', 'false');
     setGuestMode(false);
   };
+
+  // While firebase auth is initializing, show a premium loading screen to avoid flashes/redirects
+  if (authLoading) {
+    return (
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-[#f9fefb] dark:bg-[#03140b] font-sans">
+        <div className="flex flex-col items-center space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 dark:bg-emerald-500/20 flex items-center justify-center animate-pulse">
+            <span className="text-emerald-500 text-xl font-black">$</span>
+          </div>
+          <p className="text-xs font-bold text-slate-400 dark:text-emerald-400/40 animate-pulse">
+            Menyelaraskan data aman...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   // If user is not authenticated and not in guest mode, show the Login/Auth screen
   if (!currentUser && !guestMode) {

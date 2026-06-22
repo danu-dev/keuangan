@@ -39,6 +39,7 @@ const generateRoomCode = () => {
 
 export const useSync = (userName: string, setUserName?: (name: string) => void) => {
   const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [syncRoomId, setSyncRoomId] = useState<string | null>(() => {
     return localStorage.getItem('fv_syncRoomId');
   });
@@ -66,6 +67,7 @@ export const useSync = (userName: string, setUserName?: (name: string) => void) 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
+      setAuthLoading(false);
       if (user && setUserName) {
         const name = user.displayName || user.email?.split('@')[0] || user.phoneNumber || 'User';
         if (localStorage.getItem('fv_userName') === 'Put' || !localStorage.getItem('fv_userName')) {
@@ -518,6 +520,7 @@ export const useSync = (userName: string, setUserName?: (name: string) => void) 
 
   return {
     currentUser,
+    authLoading,
     syncRoomId,
     syncStatus,
     syncError,
