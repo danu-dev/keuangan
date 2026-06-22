@@ -1,21 +1,26 @@
-const CACHE_NAME = 'financevoice-v1';
-const ASSETS = [
-  './',
-  './index.html',
-  './src/main.tsx',
-  './src/App.tsx',
-  './src/index.css',
-  './manifest.json',
-  './icon-192.png',
-  './icon-512.png'
+const CACHE_NAME = 'financevoice-v2';
+const STATIC_ASSETS = [
+  '/',
+  '/index.html',
+  '/manifest.json',
+  '/favicon.svg',
+  '/icon-192.png',
+  '/icon-512.png'
 ];
 
-// Install Service Worker
+// Install Service Worker and cache essential static assets
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      console.log('[Service Worker] Caching App Shell...');
-      return cache.addAll(ASSETS);
+      console.log('[Service Worker] Caching core static files...');
+      // Individually cache each static asset so a failure on one doesn't crash the whole worker
+      return Promise.all(
+        STATIC_ASSETS.map((url) => {
+          return cache.add(url).catch(err => {
+            console.warn(`[Service Worker] Failed to cache static asset: ${url}`, err);
+          });
+        })
+      );
     }).then(() => self.skipWaiting())
   );
 });
@@ -36,19 +41,58 @@ self.addEventListener('activate', (e) => {
   );
 });
 
-// Fetch interception - Cache First, fallback to Network
+// Fetch Interception
 self.addEventListener('fetch', (e) => {
-  // Only intercept HTTP/HTTPS (skip chrome-extension, etc.)
+  // Only intercept HTTP/HTTPS requests from our own origin
   if (!e.request.url.startsWith(self.location.origin)) return;
 
+  const url = new URL(e.request.url);
+
+  // 1. Navigation requests (HTML pages) -> Network First, falling back to Cache
+  if (e.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
+    e.respondWith(
+      fetch(e.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(e.request, responseClone);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match('/index.html') || caches.match('/');
+        })
+    );
+    return;
+  }
+
+  // 2. Static Assets (JS, CSS, images under /assets/) -> Cache First, falling back to Network
+  if (url.pathname.includes('/assets/')) {
+    e.respondWith(
+      caches.match(e.request).then((cachedResponse) => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return fetch(e.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(e.request, responseClone);
+            });
+          }
+          return networkResponse;
+        });
+      })
+    );
+    return;
+  }
+
+  // 3. Other requests (e.g. manifest, icons, favicon) -> Network First with cache fallback
   e.respondWith(
-    caches.match(e.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      
-      return fetch(e.request).then((networkResponse) => {
-        // Cache dynamic assets if they are successful
+    fetch(e.request)
+      .then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
           const responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
@@ -56,12 +100,9 @@ self.addEventListener('fetch', (e) => {
           });
         }
         return networkResponse;
-      }).catch(() => {
-        // If offline and request is for page, return cached index
-        if (e.request.mode === 'navigate') {
-          return caches.match('./index.html');
-        }
-      });
-    })
+      })
+      .catch(() => {
+        return caches.match(e.request);
+      })
   );
 });
