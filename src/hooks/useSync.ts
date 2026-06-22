@@ -78,17 +78,17 @@ export const useSync = (userName: string, setUserName?: (name: string) => void) 
 
   // Get active firestore collections depending on login or room sync
   const getCollections = (): { txCol: CollectionReference; budgetCol: CollectionReference; walletCol: CollectionReference } | null => {
-    if (currentUser) {
-      return {
-        txCol: collection(firestore, USERS_COLLECTION, currentUser.uid, 'transactions'),
-        budgetCol: collection(firestore, USERS_COLLECTION, currentUser.uid, 'budgets'),
-        walletCol: collection(firestore, USERS_COLLECTION, currentUser.uid, 'wallets')
-      };
-    } else if (syncRoomId) {
+    if (syncRoomId) {
       return {
         txCol: collection(firestore, ROOMS_COLLECTION, syncRoomId, 'transactions'),
         budgetCol: collection(firestore, ROOMS_COLLECTION, syncRoomId, 'budgets'),
         walletCol: collection(firestore, ROOMS_COLLECTION, syncRoomId, 'wallets')
+      };
+    } else if (currentUser) {
+      return {
+        txCol: collection(firestore, USERS_COLLECTION, currentUser.uid, 'transactions'),
+        budgetCol: collection(firestore, USERS_COLLECTION, currentUser.uid, 'budgets'),
+        walletCol: collection(firestore, USERS_COLLECTION, currentUser.uid, 'wallets')
       };
     }
     return null;

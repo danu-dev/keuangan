@@ -59,7 +59,6 @@ export const SettingsPage: React.FC<SettingsProps> = ({
   const [joinCodeInput, setJoinCodeInput] = useState('');
   const [copied, setCopied] = useState(false);
   const [qrCodeUrl, setQrCodeUrl] = useState<string>('');
-  const [cloudQrCodeUrl, setCloudQrCodeUrl] = useState<string>('');
 
   useEffect(() => {
     setNameInput(userName);
@@ -131,28 +130,7 @@ export const SettingsPage: React.FC<SettingsProps> = ({
     }
   }, [syncRoomId]);
 
-  // Generate QR Code for app link for cloud users
-  useEffect(() => {
-    if (currentUser) {
-      const currentUrl = new URL(window.location.origin);
-      QRCode.toDataURL(currentUrl.toString(), {
-        width: 250,
-        margin: 3,
-        color: {
-          dark: '#042f1a',
-          light: '#ffffff'
-        }
-      }, (error, url) => {
-        if (error) {
-          console.error('Error generating Cloud QR Code:', error);
-        } else if (url) {
-          setCloudQrCodeUrl(url);
-        }
-      });
-    } else {
-      setCloudQrCodeUrl('');
-    }
-  }, [currentUser]);
+
 
   const handleSaveName = (e: React.FormEvent) => {
     e.preventDefault();
@@ -389,44 +367,43 @@ export const SettingsPage: React.FC<SettingsProps> = ({
       )}
 
       {/* Real-time Multi-device Sync Section */}
-      {currentUser ? (
+      {currentUser && (
         // Sync configuration for logged-in user
         <div className="bg-white dark:bg-[#052e1610] dark:border dark:border-emerald-950/20 border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
           <h3 className="text-xs font-bold text-slate-800 dark:text-emerald-100 flex items-center space-x-1.5">
             <Cloud className="w-4 h-4 text-emerald-500" />
             <span>Sinkronisasi Cloud</span>
           </h3>
-          <div className="flex items-center space-x-2 text-xs text-slate-600 dark:text-emerald-300">
-            <span className="h-2.5 w-2.5 bg-emerald-500 rounded-full animate-pulse flex-shrink-0"></span>
-            <span className="font-bold">Sinkronisasi otomatis aktif menggunakan akun Anda.</span>
-          </div>
-          <p className="text-[10px] text-slate-400 dark:text-emerald-400/30 leading-relaxed">
-            Data transaksi dan anggaran Anda dicadangkan secara realtime ke Firestore. Anda cukup masuk dengan akun yang sama pada perangkat lain untuk melihat data yang sama.
-          </p>
-
-          <div className="flex flex-col items-center justify-center p-4 bg-slate-50 dark:bg-emerald-950/10 rounded-2xl border border-slate-100 dark:border-emerald-950/10 space-y-3">
-            {cloudQrCodeUrl && (
-              <div className="p-2 bg-white rounded-2xl border border-slate-200/60 dark:border-emerald-900/10 shadow-sm flex items-center justify-center">
-                <img src={cloudQrCodeUrl} alt="Scan QR HP" className="w-[180px] h-[180px] block rounded-xl select-none" />
-              </div>
-            )}
-            <div className="text-center space-y-1">
-              <p className="text-[10px] font-bold text-slate-500 dark:text-emerald-400">Scan QR untuk Hubungkan HP</p>
-              <p className="text-[9px] text-slate-400 dark:text-emerald-400/40">Scan QR Code untuk membuka cepat aplikasi FinanceVoice di browser HP Anda dan masuk akun.</p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 text-xs text-slate-600 dark:text-emerald-300">
+              <span className="h-2.5 w-2.5 bg-emerald-500 rounded-full animate-pulse flex-shrink-0"></span>
+              <span className="font-bold">Aktif ({currentUser.email || 'Akun Cloud'})</span>
             </div>
+            <button
+              onClick={() => {
+                signOut(auth).then(() => onResetAllData());
+              }}
+              className="px-2.5 py-1.5 border border-rose-200 hover:bg-rose-50 text-rose-600 dark:border-rose-950/30 dark:hover:bg-rose-950/20 text-[10px] font-bold rounded-lg transition-colors cursor-pointer"
+            >
+              Keluar Akun
+            </button>
           </div>
-        </div>
-      ) : (
-        // Guest Room Sync code
-        <div className="bg-white dark:bg-[#052e1610] dark:border dark:border-emerald-950/20 border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
-          <h3 className="text-xs font-bold text-slate-800 dark:text-emerald-100 flex items-center space-x-1.5">
-            <QrCode className="w-4 h-4 text-emerald-500" />
-            <span>Sinkronisasi Multi-Perangkat (Tamu)</span>
-          </h3>
-          
           <p className="text-[10px] text-slate-400 dark:text-emerald-400/30 leading-relaxed">
-            Hubungkan Laptop dan HP Anda untuk menyinkronkan catatan transaksi secara realtime tanpa akun. Data tetap disimpan lokal di IndexedDB agar bisa diakses fully offline.
+            Data transaksi Anda dicadangkan secara otomatis dan aman di cloud. Data Anda akan tetap tersimpan secara lokal dan sinkron otomatis saat online.
           </p>
+        </div>
+      )}
+
+      {/* Guest Room Sync code / Multi-device Sharing (Always visible so logged-in users can share to mobile without login) */}
+      <div className="bg-white dark:bg-[#052e1610] dark:border dark:border-emerald-950/20 border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">
+        <h3 className="text-xs font-bold text-slate-800 dark:text-emerald-100 flex items-center space-x-1.5">
+          <QrCode className="w-4 h-4 text-emerald-500" />
+          <span>Sinkronisasi Multi-Perangkat (Tanpa Akun / Tamu)</span>
+        </h3>
+        
+        <p className="text-[10px] text-slate-400 dark:text-emerald-400/30 leading-relaxed">
+          Hubungkan Laptop dan HP Anda untuk menyinkronkan catatan transaksi secara realtime tanpa mengetik sandi. Data tetap disimpan lokal di IndexedDB agar bisa diakses fully offline.
+        </p>
 
           {syncRoomId ? (
             <div className="space-y-4 pt-2 border-t border-slate-50 dark:border-emerald-950/20">
@@ -531,7 +508,6 @@ export const SettingsPage: React.FC<SettingsProps> = ({
             </div>
           )}
         </div>
-      )}
 
       {/* Data Operations */}
       <div className="bg-white dark:bg-[#052e1610] dark:border dark:border-emerald-950/20 border border-slate-100 rounded-3xl p-5 shadow-sm space-y-4">

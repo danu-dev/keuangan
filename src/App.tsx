@@ -83,6 +83,10 @@ function App() {
       // Clean URL search parameters to keep interface neat
       window.history.replaceState({}, document.title, window.location.pathname);
       
+      // Auto bypass login screen by entering guest sync mode
+      localStorage.setItem('fv_guestMode', 'true');
+      setGuestMode(true);
+
       joinSyncRoom(joinCode)
         .then(() => {
           alert(`Berhasil tersambung ke ruang sinkronisasi: ${joinCode}`);
